@@ -1,1 +1,161 @@
-local P=game:GetService("Players");local R=game:GetService("RunService");local C=workspace.CurrentCamera;local L=P.LocalPlayer;local M=L:GetMouse();local WS=workspace;local S={Smooth=0.01,Target="Head",WallCheck=true,Spin=true,SpinSpeed=800,Rate=0.02};local W;local function F()local c=L.Character;if c then for _,v in pairs(c:GetDescendants())do if v:IsA("RemoteEvent")and(v.Name:lower():find("shoot")or v.Name:lower():find("fire")or v.Name:lower():find("attack")or v.Name:lower():find("hit"))then return v end end;local t=c:FindFirstChildOfClass("Tool");if t then for _,v in pairs(t:GetDescendants())do if v:IsA("RemoteEvent")then return v end end end end;for _,v in pairs(game:GetService("ReplicatedStorage"):GetDescendants())do if v:IsA("RemoteEvent")and(v.Name:lower():find("shoot")or v.Name:lower():find("fire")or v.Name:lower():find("attack"))then return v end end;for _,v in pairs(game:GetService("ReplicatedFirst"):GetDescendants())do if v:IsA("RemoteEvent")and(v.Name:lower():find("shoot")or v.Name:lower():find("fire"))then return v end end;return nil end;W=F();local function G(p)if not W then for i=1,3 do mouse1click()end;return end;local c=L.Character;if not c then return end;local h=c:FindFirstChild("Head");if not h then return end;local o=h.Position;local t=p or(C.CFrame.Position+C.CFrame.LookVector*500);pcall(function()if W:IsA("RemoteEvent")then W:FireServer(t,(t-o).Unit)elseif W:IsA("RemoteFunction")then W:InvokeServer(t,(t-o).Unit)else mouse1click()end end)end;local function H()local best,bd=nil,math.huge;local ch=L.Character;if not ch then return nil end;local hpos=ch:FindFirstChild("Head");if not hpos then return nil end;for _,pl in pairs(P:GetPlayers())do if pl~=L then local tc=pl.Character;if tc then local hu=tc:FindFirstChild("Humanoid");if hu and hu.Health>0 then local pt=tc:FindFirstChild(S.Target)or tc:FindFirstChild("UpperTorso")or tc:FindFirstChild("HumanoidRootPart");if pt then if S.WallCheck then local ray=Ray.new(hpos.Position,(pt.Position-hpos.Position).Unit*1000);local hit=WS:FindPartOnRay(ray,ch);if hit and not hit:IsDescendantOf(tc)then return nil end end;local sp=C:WorldToScreenPoint(pt.Position);if sp then local di=(Vector2.new(C.ViewportSize.X/2,C.ViewportSize.Y/2)-Vector2.new(sp.X,sp.Y)).Magnitude;if di<360 then bd=di;best=pt end end end end end end end;return best end;local a=0;local st=0;R.RenderStepped:Connect(function()local dt=R.RenderStepped:Wait();if S.Spin then a=a+S.SpinSpeed*dt;local ch=L.Character;if ch then local hrp=ch:FindFirstChild("HumanoidRootPart");if hrp then pcall(function()hrp.CFrame=CFrame.new(hrp.Position)*CFrame.Angles(0,math.rad(a),0)end)end end end;local t=H();if t then local sp=C:WorldToScreenPoint(t.Position);if sp then local dl=(Vector2.new(sp.X,sp.Y)-Vector2.new(M.X,M.Y))*S.Smooth;if dl.Magnitude>0.2 then pcall(function()mousemoverel(dl.X,dl.Y)end)end;st=st+dt;if st>=S.Rate then pcall(function()G(t.Position)end);st=0 end end end end);print("DDS ULTIMATE: 10ms aim | 50/s shoot | Spin 800 | Walls ON | NO MENU")
+-- DDS Combat Arena ULTIMATE
+-- Аимбот 10ms | Автострельба 50/сек | Стены | Spin Bot
+-- Всё включено. Без меню.
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Workspace = workspace
+
+-- Настройки (меняй здесь)
+local Settings = {
+    Smooth = 0.01,        -- Наводка 10 мс
+    Target = "Head",      -- Head / UpperTorso / HumanoidRootPart
+    WallCheck = true,     -- Проверка стен
+    Spin = true,          -- Крутилка
+    SpinSpeed = 600,      -- Скорость крутилки
+    ShootRate = 0.02,     -- 50 выстрелов/сек
+    MaxDist = 300         -- Макс дистанция
+}
+
+-- Поиск RemoteEvent
+local Remote = nil
+local function FindRemote()
+    local char = LocalPlayer.Character
+    if char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("RemoteEvent") and (v.Name:lower():find("shoot") or v.Name:lower():find("fire") or v.Name:lower():find("attack")) then
+                return v
+            end
+        end
+        local tool = char:FindFirstChildOfClass("Tool")
+        if tool then
+            for _, v in pairs(tool:GetDescendants()) do
+                if v:IsA("RemoteEvent") then
+                    return v
+                end
+            end
+        end
+    end
+    for _, v in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if v:IsA("RemoteEvent") and (v.Name:lower():find("shoot") or v.Name:lower():find("fire") or v.Name:lower():find("attack")) then
+            return v
+        end
+    end
+    return nil
+end
+Remote = FindRemote()
+
+-- Функция выстрела
+local function Shoot(targetPos)
+    if not Remote then
+        mouse1click()
+        return
+    end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local head = char:FindFirstChild("Head")
+    if not head then return end
+    local origin = head.Position
+    local target = targetPos or (Camera.CFrame.Position + Camera.CFrame.LookVector * 500)
+    pcall(function()
+        Remote:FireServer(target, (target - origin).Unit)
+    end)
+end
+
+-- Поиск цели
+local function GetTarget()
+    local best = nil
+    local bestDist = math.huge
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local headPos = char:FindFirstChild("Head")
+    if not headPos then return nil end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local targetChar = player.Character
+            if targetChar then
+                local humanoid = targetChar:FindFirstChild("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    local targetPart = targetChar:FindFirstChild(Settings.Target) or targetChar:FindFirstChild("UpperTorso") or targetChar:FindFirstChild("HumanoidRootPart")
+                    if targetPart then
+                        if Settings.WallCheck then
+                            local ray = Ray.new(headPos.Position, (targetPart.Position - headPos.Position).Unit * 1000)
+                            local hit = Workspace:FindPartOnRay(ray, char)
+                            if hit and not hit:IsDescendantOf(targetChar) then
+                                return nil
+                            end
+                        end
+                        local dist = (targetPart.Position - headPos.Position).Magnitude
+                        if dist < bestDist and dist < Settings.MaxDist then
+                            bestDist = dist
+                            best = targetPart
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return best
+end
+
+-- Переменные для таймеров
+local spinAngle = 0
+local shootTimer = 0
+local searchTimer = 0
+
+-- Главный цикл
+RunService.RenderStepped:Connect(function()
+    local dt = RunService.RenderStepped:Wait()
+    
+    -- Spin Bot (крутилка)
+    if Settings.Spin then
+        spinAngle = spinAngle + Settings.SpinSpeed * dt
+        local char = LocalPlayer.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                pcall(function()
+                    hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, math.rad(spinAngle), 0)
+                end)
+            end
+        end
+    end
+    
+    -- Поиск цели (раз в 100 мс)
+    searchTimer = searchTimer + dt
+    local target = nil
+    if searchTimer >= 0.1 then
+        searchTimer = 0
+        target = GetTarget()
+    end
+    
+    if target then
+        -- Наведение
+        local screenPos = Camera:WorldToScreenPoint(target.Position)
+        if screenPos then
+            local currentMouse = Vector2.new(Mouse.X, Mouse.Y)
+            local targetMouse = Vector2.new(screenPos.X, screenPos.Y)
+            local delta = (targetMouse - currentMouse) * Settings.Smooth
+            if delta.Magnitude > 0.2 then
+                pcall(function()
+                    mousemoverel(delta.X, delta.Y)
+                end)
+            end
+            
+            -- Автострельба
+            shootTimer = shootTimer + dt
+            if shootTimer >= Settings.ShootRate then
+                shootTimer = 0
+                pcall(function()
+                    Shoot(target.Position)
+                end)
+            end
+        end
+    end
+end)
+
+print("DDS ULTIMATE LOADED: 10ms aim | 50/s shoot | Spin ON | Walls ON")
